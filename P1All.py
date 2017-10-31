@@ -10,6 +10,8 @@ for i in range(0, 27):
     col_list.append(col_namesfp.readline().replace('\n', ''))
 col_namesfp.close()
 
+df_list = []
+
 for year_num in range(2011, 2017):
     file_name = './data/Data' + str(year_num)+'.csv'
     df = pd.read_csv(file_name, header=0)
@@ -23,39 +25,42 @@ for year_num in range(2011, 2017):
 
     selected_df = selected_df.apply(lambda x: pd.factorize(x)[0])
     # print selected_df
+    df_list.append(selected_df)
 
-    # use 85% of the dataset as training set.
-    selected_df['is_train'] = np.random.uniform(0, 1, len(selected_df)) <= 0.85
+selected_df = pd.concat(df_list)
 
-    train = selected_df[selected_df['is_train']==True]
-    test = selected_df[selected_df['is_train']==False]
-    features = selected_df.columns[0:26]
+# use 85% of the dataset as training set.
+selected_df['is_train'] = np.random.uniform(0, 1, len(selected_df)) <= 0.85
 
-    print features
-    # print train
-    # print test
+train = selected_df[selected_df['is_train']==True]
+test = selected_df[selected_df['is_train']==False]
+features = selected_df.columns[0:26]
 
-    forest = RFC(n_jobs=8, n_estimators=320)
+print features
+# print train
+# print test
 
-    #y, _ = pd.factorize(train['CRASH_SEVERITY'])
-    y = train['CRASH_SEVERITY']
+forest = RFC(n_jobs=8, n_estimators=320)
 
-    forest.fit(train[features], y)
-    preds = forest.predict(test[features])
-    print pd.crosstab(index=test['CRASH_SEVERITY'], columns=preds, rownames=['actual'], colnames=['preds'])
+#y, _ = pd.factorize(train['CRASH_SEVERITY'])
+y = train['CRASH_SEVERITY']
 
-    importances = forest.feature_importances_
-    indices = np.argsort(importances)
+forest.fit(train[features], y)
+preds = forest.predict(test[features])
+print pd.crosstab(index=test['CRASH_SEVERITY'], columns=preds, rownames=['actual'], colnames=['preds'])
 
-    fig_title = 'Feature Importances - ' + str(year_num)
-    plt.figure(1)
-    plt.title(fig_title)
-    plt.barh(range(len(indices)), importances[indices], color='b', align='center')
-    plt.yticks(range(len(indices)), features[indices])
-    plt.xlabel('Relative Importance')
-    plt.subplots_adjust(left=0.2)
+importances = forest.feature_importances_
+indices = np.argsort(importances)
 
-    plt.show()
+fig_title = 'Feature Importances - All'
+plt.figure(1)
+plt.title(fig_title)
+plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+plt.yticks(range(len(indices)), features[indices])
+plt.xlabel('Relative Importance')
+plt.subplots_adjust(left=0.2)
+
+plt.show()
 
 # Appendix : raw column names
 # So you can find columns you need, without battling Excel, or anything similiar
